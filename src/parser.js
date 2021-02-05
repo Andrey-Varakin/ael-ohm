@@ -7,17 +7,21 @@ import * as ast from "./ast.js"
 
 const aelGrammar = ohm.grammar(String.raw`Ael {
   Program   = Statement+
-  Statement = let id "=" Exp                  --vardec
-            | Var "=" Exp                     --assign
-            | print Exp                       --print
-  Exp       = Exp ("+" | "-") Term            --binary
+  Statement = let id "=" Primary              --vardec
+            | Var "=" Primary                 --assign
+            | print Primary                   --print
+  Primary   = Primary "==" Exp                --equality
+            | Exp
+  Exp       = Exp ("+" | "-" ) Term           --binary
             | Term
-  Term      = Term ("*"| "/") Factor          --binary
+  Term      = Term ("*"| "/" | "%") Factor    --binary
             | Factor
-  Factor    = Var
+  Factor    = Secondary
             | num
             | "(" Exp ")"                     --parens
             | ("-" | abs | sqrt) Factor       --unary
+  Secondary = Var "**" Secondary              --exponent
+            | Var
   Var       = id
   num       = digit+ ("." digit+)?
   let       = "let" ~alnum
@@ -27,6 +31,7 @@ const aelGrammar = ohm.grammar(String.raw`Ael {
   keyword   = let | print | abs | sqrt
   id        = ~keyword letter alnum*
   space    += "//" (~"\n" any)* ("\n" | end)  --comment
+
 }`)
 
 const astBuilder = aelGrammar.createSemantics().addOperation("ast", {
